@@ -1,0 +1,19 @@
+{
+  "rules": {
+    "rooms": {
+      "$room": {
+        ".read": "$room.matches(/^[A-Za-z0-9]{20,40}$/)",
+        ".write": "$room.matches(/^[A-Za-z0-9]{20,40}$/)",
+        "$tracker": {
+          ".validate": "$tracker == 'arabic' || $tracker == 'german'",
+          "ticks": {
+            "$k": {
+              ".validate": "newData.isBoolean() && newData.val() == true && $k.matches(/^[0-9]{1,2}-[0-4]$/)"
+            }
+          },
+          "$other": { ".validate": false }
+        }
+      }
+    }
+  }
+}

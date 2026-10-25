@@ -1,0 +1,347 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="config.js"></script>
+<link rel="apple-touch-icon" href="icon-arabic.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Jordanian Arabic Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-title" content="Arabic">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: phone-first single column. This-week hero, sticky month chips, week cards with five tap-to-tick day tiles. Colours follow the printed monthly sheets. */
+:root{
+  --bg:#f4f7f6; --surface:#ffffff; --ink:#1c3533; --muted:#5a6e6b; --line:#dbe4e1;
+  --teal:#2f6866; --teal-ink:#ffffff; --teal-soft:#e2eeec; --gold:#cfa75a;
+  --box:#c4d3cf; --box-bg:rgba(255,255,255,.7);
+  --r1:#e7f1ec; --r2:#e9eef8; --r3:#f8e8df; --r4:#eee8f6; --r5:#fbf8f0;
+  --font:"Readex Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1615; --surface:#15201e; --ink:#e4eeec; --muted:#97aba7; --line:#25332f;
+  --teal:#62b4ac; --teal-ink:#0a1413; --teal-soft:#1a2b29; --gold:#c9a45c;
+  --box:#40524e; --box-bg:rgba(0,0,0,.18);
+  --r1:#15231e; --r2:#161c27; --r3:#271c17; --r4:#1f1a28; --r5:#211f19;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1615; --surface:#15201e; --ink:#e4eeec; --muted:#97aba7; --line:#25332f;
+  --teal:#62b4ac; --teal-ink:#0a1413; --teal-soft:#1a2b29; --gold:#c9a45c;
+  --box:#40524e; --box-bg:rgba(0,0,0,.18);
+  --r1:#15231e; --r2:#161c27; --r3:#271c17; --r4:#1f1a28; --r5:#211f19;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 32px;
+  -webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.app{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+
+/* Header */
+.top{padding-top:20px;display:flex;flex-direction:column;gap:14px}
+.title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.eyebrow .ar{font-size:15px;letter-spacing:0;color:var(--teal);font-weight:600;margin-inline-end:6px}
+h1{margin:2px 0 0;font-size:clamp(24px,7vw,32px);line-height:1.1;font-weight:700;color:var(--teal);text-wrap:balance;letter-spacing:-.01em}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.stat b{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.stat b small{font-size:13px;font-weight:400;color:var(--muted)}
+.stat span{font-size:12px;color:var(--muted)}
+.bar{height:6px;border-radius:99px;background:var(--teal-soft);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--teal);border-radius:inherit;transition:width .3s ease}
+
+/* Section labels */
+.label{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 8px}
+
+/* Week card */
+.week{background:var(--row);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.week.done{border-color:color-mix(in srgb,var(--gold) 70%,var(--line))}
+.wk-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wk-num{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--teal)}
+.wk-dates{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.wk-count{margin-inline-start:auto;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--muted);
+  padding:2px 8px;border-radius:99px;background:var(--box-bg)}
+.week.done .wk-count{background:var(--gold);color:#2b220e}
+.week h3{margin:0;font-size:17px;font-weight:600;line-height:1.25;text-wrap:balance}
+.week p{margin:0;color:var(--muted);font-size:14px}
+.days{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.day{border:0;background:none;padding:6px 0;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;touch-action:manipulation}
+.day .dn{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.day .bx{width:38px;height:38px;border-radius:10px;border:2px solid var(--box);background:var(--box-bg);display:grid;place-items:center;transition:background .15s,border-color .15s,transform .1s}
+.day .bx svg{width:20px;height:20px;opacity:0;transform:scale(.6);transition:opacity .15s,transform .15s}
+.day .dd{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.day:active .bx{transform:scale(.92)}
+.day[aria-pressed="true"] .bx{background:var(--teal);border-color:var(--teal)}
+.day[aria-pressed="true"] .bx svg{opacity:1;transform:none}
+.day.today .dn,.day.today .dd{color:var(--teal);font-weight:700}
+.day.today .bx{box-shadow:0 0 0 3px color-mix(in srgb,var(--teal) 30%,transparent)}
+.hero .week{padding:16px;gap:12px}
+.hero .week h3{font-size:20px}
+.hero .day .bx{width:46px;height:46px;border-radius:12px}
+.hero .day .bx svg{width:24px;height:24px}
+.hero-note{font-size:13px;color:var(--muted);margin:8px 2px 0}
+
+/* Month chips */
+.months{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:10px max(16px,env(safe-area-inset-left,0px));
+  display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line)}
+.months::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.chip .c{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.chip[aria-selected="true"]{background:var(--teal);border-color:var(--teal);color:var(--teal-ink)}
+.chip[aria-selected="true"] .c{color:inherit;opacity:.8}
+.chip.full::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold)}
+
+.month-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 10px;margin-bottom:10px}
+.month-head h2{margin:0;font-size:20px;font-weight:600;white-space:nowrap}
+.month-head span{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.list{display:flex;flex-direction:column;gap:12px}
+
+footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:16px}
+footer p{margin:0}
+.sync{display:flex;align-items:center;gap:6px;font-size:12px}
+.sync::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--box)}
+.sync[data-s="synced"]::before{background:#3f9b6a}
+.sync[data-s="error"]::before{background:#c0583d}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  background:var(--ink);color:var(--bg);border-radius:14px;padding:10px 16px;display:flex;flex-direction:column;align-items:center;gap:1px;
+  transition:opacity .2s,transform .2s;z-index:20;max-width:calc(100vw - 32px);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast .ar{font-size:18px;font-weight:600}
+.toast .tr{font-size:12px;opacity:.8}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="title-row">
+      <div>
+        <div class="eyebrow"><span class="ar" lang="ar">يلّا</span>Monthly learning tracker</div>
+        <h1>Jordanian Arabic</h1>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="sDays">0 <small>/ 265</small></b><span>practice days ticked</span><div class="bar"><i id="sDaysBar" style="width:0%"></i></div></div>
+      <div class="stat"><b id="sWeeks">0 <small>/ 53</small></b><span>weeks fully completed</span><div class="bar"><i id="sWeeksBar" style="width:0%"></i></div></div>
+    </div>
+  </header>
+
+  <section class="hero" aria-labelledby="heroLabel">
+    <h2 class="label" id="heroLabel">This week</h2>
+    <div id="hero"></div>
+    <p class="hero-note" id="heroNote" hidden></p>
+  </section>
+
+  <nav class="months" id="months" role="tablist" aria-label="Months"></nav>
+
+  <section id="monthView" aria-live="polite">
+    <div class="month-head"><h2 id="mTitle"></h2><span id="mCount"></span></div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <footer>
+    <p>Daily goal: practise for 10–20 minutes, then tick one box. Use weekends for rest, review, or catching up.</p>
+    <p>Learning path: greetings → vocabulary → grammar → real-life conversations → Jordanian culture → listening, texting &amp; fluency.</p>
+    <div class="sync" id="sync" data-s="local">Saved on this device</div>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"><span class="ar" lang="ar" id="tAr"></span><span class="tr" id="tTr"></span></div>
+
+<script>
+(function(){
+const MONTHS=[
+ ["November 2026","Nov",[[1,"Greetings & Polite Expressions","Hello, goodbye, please, thank you, excuse me"],[2,"Introducing Yourself","Your name, where you’re from, and how you are"],[3,"Pronouns & Basic Sentence Patterns","I, you, he, she, we, they; simple statements"],[4,"Jordanian Arabic Sounds","Common sounds, stress, and pronunciation practice"],[5,"Numbers 0–20","Counting, phone numbers, and simple quantities"]]],
+ ["December 2026","Dec",[[6,"Numbers 20–100, Dates & Age","Larger numbers, birthdays, and asking someone’s age"],[7,"Family & Relationships","Parents, siblings, relatives, and describing family"],[8,"Countries, Nationalities & Languages","Where people are from and what languages they speak"],[9,"Question Words","Who, what, where, when, why, how, and how much"]]],
+ ["January 2027","Jan",[[10,"Yes/No Questions & Short Answers","Asking and answering simple everyday questions"],[11,"Common Verbs in the Present","Go, come, want, like, know, have, do"],[12,"Everyday Needs & Useful Phrases","I need…, I want…, can you…?, I don’t understand"],[13,"Food & Meals","Breakfast, lunch, dinner, ingredients, and preferences"],[14,"Ordering at a Restaurant","Menus, ordering, requests, and asking for the bill"]]],
+ ["February 2027","Feb",[[15,"Coffee, Tea & Café Conversations","Ordering drinks, sizes, and café small talk"],[16,"Fruit, Vegetables & Groceries","Produce, quantities, and grocery shopping"],[17,"Shopping & Prices","How much is it?, bargaining, and paying"],[18,"Clothes, Colors & Sizes","Describing clothes and asking for another size"]]],
+ ["March 2027","Mar",[[19,"Days, Months & Time","Calendar words, telling time, and making plans"],[20,"Daily Routine","Wake up, work, study, eat, rest, and sleep"],[21,"Home & Household Objects","Rooms, furniture, and things around the house"],[22,"Describing People","Appearance, personality, and simple descriptions"]]],
+ ["April 2027","Apr",[[23,"Adjectives & Opposites","Big/small, near/far, easy/difficult, hot/cold"],[24,"Feelings & States","Happy, tired, hungry, busy, worried, and well"],[25,"Weather & Seasons","Hot, cold, rainy, sunny, and seasonal talk"],[26,"Places Around Town","Market, pharmacy, bank, school, hospital, and more"]]],
+ ["May 2027","May",[[27,"Directions & Location","Left, right, straight, beside, behind, in front of"],[28,"Taxis & Ride Conversations","Destinations, fares, and telling a driver where to go"],[29,"Buses, Cars & Getting Around","Transport vocabulary and asking about routes"],[30,"Making Plans & Invitations","Let’s go, are you free?, meeting times and places"],[31,"Friends & Social Conversation","Small talk, checking in, and keeping a conversation going"]]],
+ ["June 2027","Jun",[[32,"Hobbies & Free Time","Music, sports, films, reading, and interests"],[33,"Work, Study & Jobs","Occupations, workplace, school, and schedules"],[34,"Past Tense: What You Did","Talking simply about yesterday and completed actions"],[35,"Future Plans","Tomorrow, next week, and what you’re going to do"]]],
+ ["July 2027","Jul",[[36,"Negation: Saying ‘Not’ and ‘Don’t’","Negative statements, refusals, and correcting information"],[37,"Possession & ‘Have’","My/your/his/her, ownership, and what someone has"],[38,"Comparisons & Preferences","More/less, better, favorite things, and choices"],[39,"Health & At the Pharmacy","Basic symptoms, asking for help, and common pharmacy phrases"]]],
+ ["August 2027","Aug",[[40,"Travel & Accommodation","Hotels, reservations, check-in, and travel needs"],[41,"At the Airport","Arrivals, departures, luggage, and useful travel questions"],[42,"Jordanian Culture & Hospitality","Welcoming guests, visiting, and polite cultural expressions"],[43,"Jordanian Food & Traditional Dishes","Mansaf, maqluba, mezze, and describing local dishes"],[44,"Hospitality: Guests & Invitations","Offering food or coffee, accepting, and politely declining"]]],
+ ["September 2027","Sep",[[45,"Common Jordanian Colloquial Expressions","Natural everyday phrases and conversational fillers"],[46,"Slang & Informal Speech","Casual expressions, when to use them, and context"],[47,"Listening Practice","Understand short dialogues and pick out key words"],[48,"Speaking Practice: Mini Dialogues","Role-play greetings, cafés, shopping, and directions"]]],
+ ["October 2027","Oct",[[49,"Reading Arabic Script: Everyday Words","Recognize common words and signs; optional script practice"],[50,"Texting & Voice Messages","Casual messages, greetings, and short replies"],[51,"Tell a Story About Your Day","Connect sentences and describe a simple sequence"],[52,"Real-Life Conversation Challenge","Combine questions, answers, requests, and follow-up questions"],[53,"Review, Confidence & Personal Conversation","Review your favorite phrases and hold a short conversation"]]]
+];
+const ROWS=["--r1","--r2","--r3","--r4","--r5"];
+const DAYS=["Mon","Tue","Wed","Thu","Fri"];
+const DAY=864e5;
+const START=Date.UTC(2026,10,2); // Week 01 = Mon 2 Nov 2026, so Week 06 = Mon 7 Dec 2026
+const WEEKS=[];
+MONTHS.forEach((m,mi)=>m[2].forEach((w,pos)=>WEEKS.push({n:w[0],title:w[1],desc:w[2],mi,pos})));
+const TOTAL_DAYS=WEEKS.length*5;
+const CHECK='<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="var(--teal-ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+const now=new Date();
+const todayUTC=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+const monday=n=>START+(n-1)*7*DAY;
+const fmt=(t,o)=>new Date(t).toLocaleDateString("en-GB",Object.assign({timeZone:"UTC"},o));
+const pad=n=>String(n).padStart(2,"0");
+const key=(n,d)=>n+"-"+d;
+
+const curNum=Math.floor((todayUTC-START)/(7*DAY))+1;
+const first=WEEKS[0].n,last=WEEKS[WEEKS.length-1].n;
+const heroNum=Math.min(Math.max(curNum,first),last);
+const heroWeek=WEEKS.find(w=>w.n===heroNum);
+const todayIdx=(()=>{const d=Math.round((todayUTC-monday(curNum))/DAY);return d>=0&&d<5?d:-1})();
+
+let ticks={};
+try{ticks=JSON.parse(localStorage.getItem("jat.ticks")||"{}")||{}}catch(e){ticks={}}
+let month=heroWeek.mi;
+
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const weekDone=n=>{let c=0;for(let d=0;d<5;d++)if(ticks[key(n,d)])c++;return c};
+
+function weekCard(w){
+  const mon=monday(w.n),fri=mon+4*DAY;
+  const range=fmt(mon,{day:"numeric",month:"short"})+" – "+fmt(fri,{day:"numeric",month:"short"});
+  const c=weekDone(w.n);
+  let days="";
+  for(let d=0;d<5;d++){
+    const on=!!ticks[key(w.n,d)];
+    const isToday=w.n===curNum&&d===todayIdx;
+    const dt=fmt(mon+d*DAY,{day:"numeric"});
+    days+=`<button class="day${isToday?" today":""}" data-k="${key(w.n,d)}" aria-pressed="${on}" aria-label="Week ${w.n} ${DAYS[d]} ${fmt(mon+d*DAY,{day:"numeric",month:"long"})}${isToday?", today":""}"><span class="dn">${isToday?"Today":DAYS[d]}</span><span class="bx">${CHECK}</span><span class="dd">${dt}</span></button>`;
+  }
+  return `<article class="week${c===5?" done":""}" style="--row:var(${ROWS[w.pos]})">
+    <div class="wk-head"><span class="wk-num">WEEK ${pad(w.n)}</span><span class="wk-dates">${range}</span><span class="wk-count">${c===5?"Done":c+" / 5"}</span></div>
+    <h3>${esc(w.title)}</h3><p>${esc(w.desc)}</p>
+    <div class="days">${days}</div></article>`;
+}
+
+function render(){
+  const focusKey=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.k:null;
+  const focusInHero=focusKey&&$("hero").contains(document.activeElement);
+  // stats
+  let days=0,full=0;
+  WEEKS.forEach(w=>{const c=weekDone(w.n);days+=c;if(c===5)full++});
+  $("sDays").innerHTML=`${days} <small>/ ${TOTAL_DAYS}</small>`;
+  $("sDaysBar").style.width=(days/TOTAL_DAYS*100)+"%";
+  $("sWeeks").innerHTML=`${full} <small>/ ${WEEKS.length}</small>`;
+  $("sWeeksBar").style.width=(full/WEEKS.length*100)+"%";
+  // hero
+  const note=$("heroNote");
+  if(curNum<first){$("heroLabel").textContent="Up next";note.hidden=false;note.textContent="Week "+pad(first)+" starts Monday "+fmt(monday(first),{day:"numeric",month:"long",year:"numeric"})+".";}
+  else if(curNum>last){$("heroLabel").textContent="Final week";note.hidden=false;note.textContent="The programme has finished. Mabrouk!";}
+  else{$("heroLabel").textContent="This week";note.hidden=true;}
+  $("hero").innerHTML=weekCard(heroWeek);
+  // chips
+  $("months").innerHTML=MONTHS.map((m,i)=>{
+    const ws=WEEKS.filter(w=>w.mi===i);const c=ws.reduce((a,w)=>a+weekDone(w.n),0);const t=ws.length*5;
+    return `<button class="chip${c===t?" full":""}" role="tab" id="tab${i}" data-m="${i}" aria-selected="${i===month}" aria-controls="monthView">${m[1]} <span class="c">${c}/${t}</span></button>`;
+  }).join("");
+  // month list
+  const m=MONTHS[month],ws=WEEKS.filter(w=>w.mi===month);
+  $("mTitle").textContent=m[0];
+  $("mCount").textContent=ws.length+" weekly subjects · "+ws.reduce((a,w)=>a+weekDone(w.n),0)+"/"+ws.length*5+" days";
+  $("list").innerHTML=ws.map(weekCard).join("");
+  if(focusKey){const scope=focusInHero?$("hero"):$("list");const el=scope.querySelector(`[data-k="${focusKey}"]`);if(el)el.focus({preventScroll:true})}
+}
+
+// toast with Jordanian praise
+const PRAISE=[["يعطيك العافية","Ya‘teek il-‘afye · well done"],["عفارم عليك","‘Afarem ‘aleek · bravo"],["برافو عليك","Bravo ‘aleek · nice work"],["يا سلام","Ya salaam · lovely"]];
+let toastT;
+function toast(ar,tr){$("tAr").textContent=ar;$("tTr").textContent=tr;const t=$("toast");t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),1800)}
+
+document.addEventListener("click",e=>{
+  const day=e.target.closest(".day");
+  if(day){
+    const k=day.dataset.k,n=+k.split("-")[0];
+    if(ticks[k])delete ticks[k];else{ticks[k]=true;
+      if(weekDone(n)===5)toast("مبروك","Mabrouk · Week "+pad(n)+" complete");
+      else{const p=PRAISE[Math.floor(Math.random()*PRAISE.length)];toast(p[0],p[1])}}
+    saveLocal();render();pushTick(k,!!ticks[k]);return;
+  }
+  const chip=e.target.closest(".chip");
+  if(chip){month=+chip.dataset.m;render();const el=$("tab"+month);el.focus({preventScroll:true});el.scrollIntoView({block:"nearest",inline:"center"});
+    const mv=$("monthView");if(mv.getBoundingClientRect().top<0)mv.scrollIntoView({block:"start"});}
+});
+document.addEventListener("keydown",e=>{
+  if(!e.target.classList||!e.target.classList.contains("chip"))return;
+  if(e.key!=="ArrowRight"&&e.key!=="ArrowLeft")return;
+  month=(month+(e.key==="ArrowRight"?1:-1)+MONTHS.length)%MONTHS.length;render();$("tab"+month).focus();
+});
+
+// persistence: device cache + one family-shared progress set stored in Firebase Realtime Database
+// each tick is its own node (rooms/<family code>/<tracker>/ticks/<week>-<day>), so two people ticking at once never overwrite each other
+function saveLocal(){try{localStorage.setItem("jat.ticks",JSON.stringify(ticks))}catch(e){}}
+function setSync(s){const el=$("sync");el.dataset.s=s;el.textContent=s==="synced"?"Family progress · synced":s==="offline"?"Offline. Changes will sync when you’re back online":s==="error"?"Couldn’t sync. Saved on this device for now":s==="setup"?"Not connected yet (setup needed)":"Saved on this device"}
+const CODE_RE=/^[A-Za-z0-9]{20,40}$/;
+function newCode(){const a=new Uint8Array(24),c="abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";crypto.getRandomValues(a);return Array.from(a,x=>c[x%c.length]).join("")}
+function getCode(){
+  let c=(location.hash||"").replace(/^#/,"");
+  if(!CODE_RE.test(c)){try{c=localStorage.getItem("fam.code")||""}catch(e){c=""}}
+  if(!CODE_RE.test(c)){
+    c="";
+    if(confirm("First time here?\n\nOK = start a NEW family tracker\nCancel = I already have a family code")){c=newCode()}
+    else{const p=(prompt("Paste your family code (or open the family link instead):")||"").trim();if(CODE_RE.test(p))c=p}
+  }
+  if(!CODE_RE.test(c))return null;
+  try{localStorage.setItem("fam.code",c)}catch(e){}
+  try{history.replaceState(null,"",location.pathname+location.search+"#"+c)}catch(e){}
+  return c;
+}
+let ref=null;
+function pushTick(k,on){
+  if(!ref)return;
+  const p=on?ref.child(k).set(true):ref.child(k).remove();
+  p.then(()=>setSync("synced")).catch(()=>setSync("error"));
+}
+function addShareButton(code){
+  const el=$("sync");if(!el||$("shareBtn"))return;
+  const b=document.createElement("button");b.id="shareBtn";b.type="button";b.textContent="Copy family link";
+  b.style.cssText="margin-inline-start:10px;font:inherit;font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer";
+  b.onclick=async()=>{
+    const url=location.origin+location.pathname.replace(/[^\/]*$/,"")+"#"+code;
+    try{await navigator.clipboard.writeText(url);b.textContent="Copied"}catch(e){prompt("Copy this link and send it to your family:",url)}
+    setTimeout(()=>{b.textContent="Copy family link"},1800);
+  };
+  el.appendChild(b);
+}
+function initSync(){
+  const cfg=window.FAMILY_FIREBASE_CONFIG;
+  if(!window.firebase||!cfg||!cfg.databaseURL||/PASTE/i.test(cfg.databaseURL)){setSync("setup");return}
+  const code=getCode();
+  if(!code){setSync("local");return}
+  try{
+    if(!firebase.apps.length)firebase.initializeApp(cfg);
+    const db=firebase.database();
+    ref=db.ref("rooms/"+code+"/arabic/ticks");
+    let first=true;
+    ref.on("value",snap=>{
+      const v=snap.val()||{},next={};
+      Object.keys(v).forEach(k=>{if(v[k]===true)next[k]=true});
+      // one-time carry-over: if nothing is shared yet, push the ticks already saved on this device
+      if(first){
+        first=false;
+        const mk="seeded."+code+".arabic";let done=false;
+        try{done=!!localStorage.getItem(mk)}catch(e){}
+        const mine=Object.keys(ticks).filter(k=>ticks[k]);
+        if(!done&&mine.length){
+          const up={};mine.forEach(k=>{up[k]=true;next[k]=true});
+          ref.update(up).then(()=>{try{localStorage.setItem(mk,"1")}catch(e){}}).catch(()=>setSync("error"));
+        }else{try{localStorage.setItem(mk,"1")}catch(e){}}
+      }
+      ticks=next;saveLocal();render();setSync("synced");
+    },()=>setSync("error"));
+    db.ref(".info/connected").on("value",s=>{if(s.val()===false&&$("sync").dataset.s==="synced")setSync("offline");if(s.val()===true&&$("sync").dataset.s==="offline")setSync("synced")});
+    addShareButton(code);
+  }catch(e){setSync("error")}
+}
+
+render();
+requestAnimationFrame(()=>{const nav=$("months"),el=$("tab"+month);if(el)nav.scrollLeft=el.offsetLeft-nav.clientWidth/2+el.offsetWidth/2});
+initSync();
+})();
+</script>
