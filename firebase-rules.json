@@ -5,10 +5,22 @@
         ".read": "$room.matches(/^[A-Za-z0-9]{20,40}$/)",
         ".write": "$room.matches(/^[A-Za-z0-9]{20,40}$/)",
         "$tracker": {
-          ".validate": "$tracker == 'arabic' || $tracker == 'german'",
+          ".validate": "$tracker == 'arabic' || $tracker == 'german' || $tracker == 'money'",
           "ticks": {
             "$k": {
               ".validate": "newData.isBoolean() && newData.val() == true && $k.matches(/^[0-9]{1,2}-[0-4]$/)"
+            }
+          },
+          "entries": {
+            "$id": {
+              ".validate": "$tracker == 'money' && newData.hasChildren(['kid', 'type', 'amount', 'reason', 'date', 'at'])",
+              "kid": { ".validate": "newData.val() == 'alia' || newData.val() == 'lara'" },
+              "type": { ".validate": "newData.val() == 'topup' || newData.val() == 'spend'" },
+              "amount": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 10000000" },
+              "reason": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100" },
+              "date": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)" },
+              "at": { ".validate": "newData.isNumber()" },
+              "$other": { ".validate": false }
             }
           },
           "$other": { ".validate": false }
