@@ -27,7 +27,7 @@ h2{margin:0;font-size:17px}
 .bal .name{font-weight:700;color:var(--c)}
 .bal .num{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;margin:4px 0 2px;overflow-wrap:anywhere}
 .bal .num.neg{color:var(--out)}
-.bal .sub{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bal .sub{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:pre-line}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
 .lab{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:-6px}
 .seg{display:flex;gap:8px}
@@ -35,6 +35,11 @@ h2{margin:0;font-size:17px}
 .seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:600;flex:1;min-width:0}
 input{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;min-width:0}
+input[type="date"]{-webkit-appearance:none;appearance:none;display:block;width:100%;max-width:100%;min-width:0;min-height:46px;text-align:left}
+input[type="date"]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
+.two>label{flex:1 1 0;min-width:0;overflow:hidden}
+.warn{border:1.5px solid var(--out);color:var(--out);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:600}
+.tag{color:var(--out);font-weight:700}
 input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .two{display:flex;gap:10px}
 .primary{font:inherit;font-weight:700;padding:13px;border-radius:12px;border:0;background:var(--accent);color:var(--accent-ink);cursor:pointer}
@@ -87,6 +92,8 @@ footer{font-size:12px;color:var(--muted)}
     <div class="ok" id="saved" role="status"></div>
   </section>
 
+  <div class="warn" id="warn" role="alert" hidden></div>
+
   <section class="card" aria-labelledby="histh">
     <div class="head"><h2 id="histh">History</h2>
       <div class="chips" id="filterSeg"><button type="button" data-v="all" aria-pressed="true">Everyone</button><button type="button" data-v="alia" aria-pressed="false">Alia</button><button type="button" data-v="lara" aria-pressed="false">Lara</button></div>
@@ -105,7 +112,7 @@ const $=id=>document.getElementById(id);
 const KIDS={alia:"Alia",lara:"Lara"};
 const CODE_RE=/^[A-Za-z0-9]{20,40}$/;
 const MAX_FILS=10000000; // AED 100,000
-let kid="alia",type="topup",filter="all",limit=60,ref=null,code=null,entries={},cacheKey="money.entries.local",pend=[];
+let kid="alia",type="topup",filter="all",limit=60,ref=null,code=null,entries={},failed={},cacheKey="money.entries.local",pend=[];
 
 /* ---------- helpers ---------- */
 const valid=e=>!!e&&!!KIDS[e.kid]&&(e.type==="topup"||e.type==="spend")&&typeof e.amount==="number"&&e.amount>0&&typeof e.reason==="string"&&typeof e.date==="string";
@@ -128,7 +135,7 @@ function renderBalances(){
   ["alia","lara"].forEach(k=>{
     const bal=t[k].in-t[k].out,el=$("bal-"+k);
     el.textContent=money(bal);el.classList.toggle("neg",bal<0);
-    $("sub-"+k).textContent="In "+money(t[k].in)+" \u00b7 Out "+money(t[k].out);
+    $("sub-"+k).textContent="In "+money(t[k].in)+"\nOut "+money(t[k].out);
   });
 }
 function renderList(){
@@ -140,6 +147,7 @@ function renderList(){
     const e=entries[id],li=document.createElement("li");li.className="row "+e.type;
     const main=document.createElement("div"),r=document.createElement("div"),m=document.createElement("div");
     r.className="reason";r.textContent=e.reason;m.className="meta";m.textContent=fmtDate(e.date)+" \u00b7 "+KIDS[e.kid];
+    if(failed[id]){const tg=document.createElement("span");tg.className="tag";tg.textContent=" \u00b7 Not saved to shared copy";m.appendChild(tg)}
     main.append(r,m);
     const amt=document.createElement("div");amt.className="amt";amt.textContent=(e.type==="topup"?"+":"")+money(e.type==="topup"?e.amount:-e.amount);
     const del=document.createElement("button");del.type="button";del.className="del";del.setAttribute("aria-label","Delete this entry");del.textContent="\u00d7";
@@ -148,7 +156,8 @@ function renderList(){
   });
   $("more").hidden=ids.length<=limit;
 }
-function renderAll(){renderBalances();renderList()}
+function renderWarn(){const n=Object.keys(failed).filter(id=>entries[id]).length,w=$("warn");w.hidden=n===0;if(n)w.textContent=n+(n===1?" entry isn\u2019t":" entries aren\u2019t")+" saved to the shared copy yet, so other phones can\u2019t see "+(n===1?"it":"them")+". They are still counted on this device."}
+function renderAll(){renderBalances();renderList();renderWarn()}
 function syncSegs(){
   document.querySelectorAll("#kidSeg button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===kid)));
   document.querySelectorAll("#typeSeg button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===type)));
@@ -157,8 +166,8 @@ function syncSegs(){
 }
 
 /* ---------- sync status ---------- */
-function setSync(s){const el=$("sync"),btn=$("shareBtn");el.dataset.s=s;
-  const txt=s==="synced"?"Family data \u00b7 synced":s==="offline"?"Offline. Changes will sync when you\u2019re back online":s==="error"?"Couldn\u2019t sync. Saved on this device for now":s==="setup"?"Not connected yet (setup needed)":"Saved on this device";
+function setSync(s,detail){const el=$("sync"),btn=$("shareBtn");el.dataset.s=s;
+  const txt=s==="synced"?"Family data \u00b7 synced":s==="offline"?"Offline. Changes will sync when you\u2019re back online":s==="error"?"Couldn\u2019t sync"+(detail?" ("+detail+")":"")+". Saved on this device for now":s==="setup"?"Not connected yet (setup needed)":"Saved on this device";
   el.textContent=txt;if(btn)el.appendChild(btn)}
 function newCode(){const a=new Uint8Array(24),c="abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";crypto.getRandomValues(a);return Array.from(a,x=>c[x%c.length]).join("")}
 function getCode(){
@@ -192,8 +201,13 @@ function loadPend(){try{pend=JSON.parse(localStorage.getItem(PK())||"[]")||[]}ca
 function savePend(){try{localStorage.setItem(PK(),JSON.stringify(pend))}catch(e){}}
 function writeEntry(id,entry){
   if(pend.indexOf(id)<0){pend.push(id);savePend()}
-  ref.child(id).set(entry).then(()=>{pend=pend.filter(x=>x!==id);savePend();setSync("synced")})
-    .catch(err=>{if(err&&err.code==="PERMISSION_DENIED"){pend=pend.filter(x=>x!==id);savePend()}setSync("error")});
+  ref.child(id).set(entry).then(()=>{
+    delete failed[id];pend=pend.filter(x=>x!==id);savePend();renderAll();if(Object.keys(failed).length===0)setSync("synced");
+  }).catch(err=>{
+    // keep the entry on screen and flag it, instead of letting it silently vanish
+    entries[id]=entry;failed[id]=true;saveLocal();renderAll();
+    setSync("error",(err&&(err.code||err.message))||"unknown");
+  });
 }
 function addEntry(){
   const err=$("err"),ok=$("saved");err.textContent="";ok.textContent="";
@@ -216,7 +230,7 @@ function addEntry(){
 function removeEntry(id){
   const e=entries[id];if(!e)return;
   if(!confirm("Delete this entry?\n\n"+KIDS[e.kid]+" \u00b7 "+(e.type==="topup"?"top-up":"spend")+" \u00b7 "+money(e.amount)+" \u00b7 "+e.reason+"\n\nThis can\u2019t be undone."))return;
-  delete entries[id];saveLocal();renderAll();
+  delete entries[id];delete failed[id];saveLocal();renderAll();
   pend=pend.filter(x=>x!==id);if(code)savePend();
   if(ref)ref.child(id).remove().then(()=>setSync("synced")).catch(()=>setSync("error"));
 }
@@ -236,14 +250,16 @@ function initSync(){
     ref.on("value",snap=>{
       const v=snap.val()||{},next={};
       Object.keys(v).forEach(id=>{if(valid(v[id]))next[id]=v[id]});
+      Object.keys(failed).forEach(id=>{if(!next[id]&&valid(entries[id]))next[id]=entries[id];else if(next[id])delete failed[id]});
       if(first){
         first=false;
         // re-send anything this device wrote that never reached the server (e.g. page closed while offline)
         pend.filter(id=>!next[id]&&valid(entries[id])).forEach(id=>{next[id]=entries[id];writeEntry(id,entries[id])});
         pend=pend.filter(id=>next[id]);savePend();
       }
-      entries=next;saveLocal();renderAll();setSync("synced");
-    },()=>setSync("error"));
+      entries=next;saveLocal();renderAll();
+      if(Object.keys(failed).length===0)setSync("synced");
+    },err=>setSync("error",(err&&(err.code||err.message))||"read failed"));
     db.ref(".info/connected").on("value",s=>{const cur=$("sync").dataset.s;if(s.val()===false&&cur==="synced")setSync("offline");if(s.val()===true&&cur==="offline")setSync("synced")});
     addShareButton();
   }catch(e){setSync("error")}
