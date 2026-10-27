@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="config.js"></script>
+<link rel="apple-touch-icon" href="icon-tawla.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tawla">
+<title>Tawla Track · Amadeo &amp; Gela</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600;700;800&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}body{margin:0}[hidden]{display:none!important}
+
+:root{
+  --bg:#FFFFFF; --surface:#FFFFFF; --raised:#F1F2F4; --tile:#F6F7F9; --line:#E3E5E9; --row:#ECEEF1; --ink:#0E1014; --muted:#5E6470; --rank:#9AA0AA; --faint:#D3D6DC;
+  --accent:#D42A20; --accent-ink:#FFFFFF; --dbl:#1F5FD6; --dbl-soft:#E6EEFC;
+  --win:#1E9E57; --loss:#E0453C;
+  --f-display:"Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --f-body:"Barlow", "Segoe UI", system-ui, sans-serif;
+  --r:14px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-body);}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:22px 56px;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--f-display);font-weight:800;margin:0;text-transform:uppercase;letter-spacing:.03em;text-wrap:balance;line-height:1.05}
+h1{font-size:2rem;font-weight:900;letter-spacing:.02em}
+h1 span{color:var(--accent)}
+h2{font-size:1.45rem}
+h3{font-size:1.15rem}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.hdr-actions{display:flex;gap:8px;align-items:center}
+.iconbtn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.iconbtn:disabled{opacity:.4}
+.rules{margin:-6px 0 0;color:var(--muted);font-size:.92rem}
+nav.tabs{display:flex;gap:6px;background:var(--raised);border-radius:12px;padding:4px;max-width:520px}
+nav.tabs button{flex:1;height:42px;border:0;border-radius:9px;background:transparent;color:var(--muted);font:700 .9rem var(--f-body);text-transform:uppercase;letter-spacing:.07em;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:10px 16px;font-weight:700;cursor:pointer;line-height:1.2;color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);text-transform:uppercase;letter-spacing:.05em;font-weight:800}
+.btn.ghost{background:none;border-color:transparent;color:var(--muted);padding-inline:8px}
+.btn.danger{color:var(--loss)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.banner{border-radius:12px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;font-size:.95rem;border:1px solid var(--line)}
+.banner.ex{background:var(--dbl-soft);color:var(--ink)}
+.banner.info{background:var(--surface);color:var(--muted)}
+.banner:empty{display:none}
+.stack{display:flex;flex-direction:column;gap:14px}
+
+.logwrap{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);grid-template-areas:"live form" "live recent";gap:22px;align-items:start}
+.a-live{grid-area:live}.a-form{grid-area:form}.a-recent{grid-area:recent}
+.a-mini,.newbtn{display:none}
+.tiles3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tile{background:var(--tile);border-radius:14px;padding:12px}
+.tile .l{font-size:.69rem;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.tile .v{font-family:var(--f-display);font-weight:800;font-size:2.15rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.sh{font-size:1.4rem;margin-bottom:4px}
+.srow{display:grid;grid-template-columns:24px minmax(0,1fr) auto 44px auto;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--row)}
+.srow:last-child{border-bottom:0}
+.srow .rk{font-family:var(--f-display);font-weight:800;font-size:1.25rem;color:var(--rank)}
+.srow.top .rk{color:var(--accent)}
+.srow .nm{font-weight:700;overflow-wrap:anywhere}
+.srow .wl{color:var(--muted);font-size:.88rem;font-variant-numeric:tabular-nums}
+.srow .pc{font-weight:700;font-variant-numeric:tabular-nums}
+@media (max-width:820px){
+  .logwrap{display:flex;flex-direction:column;gap:18px}
+  .a-mini{display:flex}
+  .newbtn{display:flex;width:100%;height:48px;text-transform:uppercase;letter-spacing:.05em}
+  .a-form{display:none}
+  .logwrap.open .a-form{display:flex}
+  .desk,.rules{display:none}
+  .foot .btn{font-size:.82rem;padding:6px 6px}
+}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px}
+
+.match{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:14px;box-shadow:0 8px 24px rgba(14,16,20,.06)}
+.match .meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;font-size:.82rem;color:var(--muted)}
+.live{display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-weight:800;letter-spacing:.09em}
+.live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.final{color:var(--win);font-weight:800;letter-spacing:.09em}
+.sb{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;text-align:center}
+.side{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.stone{width:26px;height:26px;border-radius:50%;flex:none}
+.stone.a{background:#FFFFFF;border:2px solid var(--ink)}
+.stone.b{background:var(--ink);border:2px solid var(--ink)}
+.pname{font-weight:700;font-size:1.05rem;overflow-wrap:anywhere;line-height:1.2}
+.score{font-family:var(--f-display);font-weight:900;font-size:5.6rem;line-height:.9;font-variant-numeric:tabular-nums;white-space:nowrap}
+.score .lead{color:var(--accent)}
+.score .sep{color:var(--faint);font-size:.65em;padding:0 .12em;vertical-align:.12em}
+.acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.acts button{height:48px;border-radius:12px;font:800 .92rem var(--f-body);letter-spacing:.04em;text-transform:uppercase;cursor:pointer;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px}
+.acts .w{border:0}
+.acts .w.a{background:var(--accent);color:var(--accent-ink)}
+.acts .w.b{background:var(--ink);color:var(--bg)}
+.acts .d{height:44px;border:1.5px solid var(--dbl);background:transparent;color:var(--dbl)}
+.acts button:disabled{opacity:.4;cursor:not-allowed}
+.glog{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:.78rem;font-weight:600;border-radius:999px;padding:4px 10px;background:var(--raised);color:var(--muted);white-space:nowrap}
+.chip.d{background:var(--dbl-soft);color:var(--dbl)}
+button.chip{border:0;cursor:pointer;font-family:inherit}
+button.chip:hover{box-shadow:inset 0 0 0 1px var(--rank)}
+.chip.sel{box-shadow:inset 0 0 0 2px var(--ink)}
+.editbox{background:var(--tile);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.egrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:460px){.egrid{grid-template-columns:1fr}}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;height:44px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);font-weight:700;cursor:pointer;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.check{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.94rem}
+.check input{width:20px;height:20px;accent-color:var(--dbl);flex:none}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.warn{background:var(--dbl-soft);border-radius:10px;padding:10px 12px;font-size:.92rem}
+.plist .pr{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--row)}
+.plist .pr:last-child{border-bottom:0}
+.cmp{display:grid;grid-template-columns:44px minmax(0,1fr) minmax(0,1fr) 44px;column-gap:4px;row-gap:4px;align-items:center}
+.cmp .lbl{grid-column:1/-1;text-align:center;font-size:.85rem;font-weight:700;color:var(--muted)}
+.cmp .cv{font-family:var(--f-display);font-weight:800;font-size:1.5rem;line-height:1;font-variant-numeric:tabular-nums}
+.cmp .cv.r{text-align:right}
+.cmp .cv.hi{color:var(--accent)}
+.cmp .bars{display:flex;height:10px;background:var(--row);border-radius:5px;overflow:hidden}
+.cmp .bars:nth-of-type(2){justify-content:flex-end}
+.cmp .bl,.cmp .br{display:block;height:10px;background:var(--rank)}
+.cmp .bl.hi,.cmp .br.hi{background:var(--accent)}
+.sugg{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.foot{display:flex;flex-wrap:wrap;gap:6px;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:8px}
+.confirm{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:var(--loss);font-weight:700;font-size:.92rem}
+.hint{font-size:.85rem;color:var(--muted);margin:0}
+.err{color:var(--loss);font-size:.9rem;margin:0}
+.empty{border:1px dashed var(--line);border-radius:18px;padding:22px;color:var(--muted)}
+.empty h3{color:var(--ink);margin-bottom:6px}
+
+form.new{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+form.new .full{grid-column:1/-1}
+@media (max-width:460px){form.new{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field input,select.inp{border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:10px 12px;width:100%;min-width:0;color:var(--ink)}
+.recent{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.recent:last-child{border-bottom:0}
+.recent .sc{font-family:var(--f-display);font-weight:800;font-size:1.3rem}
+
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.filters .field{width:auto;min-width:170px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.kpi{background:var(--tile);border-radius:var(--r);padding:12px 14px}
+.kpi .v{font-family:var(--f-display);font-weight:800;font-size:2.2rem;line-height:1.1}
+.kpi .s{font-size:.8rem;color:var(--muted)}
+@media (max-width:700px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi:last-child{grid-column:1/-1}}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec>header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+th,td{padding:10px 12px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--row)}
+tr:last-child td{border-bottom:0}
+th{font-size:.7rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700;background:var(--raised)}
+td.r,th.r{text-align:right}
+td.num{font-variant-numeric:tabular-nums}
+.low{color:var(--muted)}
+.low::after{content:"*";margin-left:1px}
+.rank{font-family:var(--f-display);font-weight:800;font-size:1.25rem;color:var(--rank)}
+tr:first-child .rank{color:var(--accent)}
+.form{display:inline-flex;gap:3px;vertical-align:middle}
+.fx{width:7px;height:20px;border-radius:3px}
+.fx.W{background:var(--win)}
+.fx.L{background:var(--loss)}
+.matrix td,.matrix th{text-align:center}
+.matrix th[scope=row]{text-align:left;background:var(--raised)}
+.matrix td.self{color:var(--faint)}
+.matrix td.lead{color:var(--win);font-weight:700}
+.matrix td.trail{color:var(--loss)}
+.insights{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.ins{background:var(--tile);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:4px}
+.ins .big{font-family:var(--f-display);font-weight:800;font-size:2rem;line-height:1.1}
+.ins p{margin:0;font-size:.94rem}
+.ins .n{font-size:.8rem;color:var(--muted)}
+.tag{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--dbl);margin-left:6px}
+.chart{position:relative;background:var(--tile);border-radius:var(--r);padding:12px}
+.chart svg{display:block;width:100%;height:auto}
+.chart text{fill:var(--muted);font:600 11px var(--f-body)}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart rect.bar{fill:var(--accent)}
+.chart g:hover rect.bar{fill:var(--ink)}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font:600 12px/1.3 var(--f-body);padding:6px 8px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-115%)}
+.note{font-size:.85rem;color:var(--muted);margin:0}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:.95rem;max-width:calc(100% - 32px);z-index:5}
+.histfilter{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+@media (max-width:420px){.score{font-size:4.6rem}}
+@media (prefers-reduced-motion:no-preference){.btn,.acts button,nav.tabs button{transition:background .15s,color .15s,border-color .15s}}
+
+.sync{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.sync::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--rank);flex:none}
+.sync[data-s="synced"]::before{background:var(--win)}
+.sync[data-s="error"]::before{background:var(--loss)}
+.sync button{font:inherit;font-size:.8rem;padding:3px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.kpis.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:700px){.kpis.four{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis.four .kpi:last-child{grid-column:auto}}
+.pos{color:var(--win)}.neg{color:var(--loss)}
+.wagertag{display:inline-block;background:var(--tile);border-radius:999px;padding:1px 9px;font-weight:700;color:var(--ink)}
+.chip.x{text-decoration:line-through;opacity:.6}
+.banner.warnb{background:#FDECEA;color:var(--ink);border-color:#F4C3BE}
+form.new .full{grid-column:1/-1}
+
+</style>
+</head><body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Tawla<span> Track</span></h1>
+      <p class="rules" style="margin:2px 0 0;font-weight:700">Amadeo &amp; Gela</p>
+    </div>
+    <div class="hdr-actions">
+      <button class="iconbtn" id="exportBtn" type="button" aria-label="Export to Excel" title="Export to Excel"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></button>
+    </div>
+  </header>
+  <p class="rules">First to 3 points. A game is worth 1, or 2 when won as a double (the opponent bore off no checkers). An optional wager can ride on each match: the winner collects it.</p>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="log" aria-selected="true" id="t-log">Log</button>
+    <button role="tab" data-tab="dash" aria-selected="false" id="t-dash">Stats</button>
+    <button role="tab" data-tab="hist" aria-selected="false" id="t-hist">History</button>
+  </nav>
+
+  <div id="banner" class="banner"></div>
+
+  <section id="tab-log">
+    <div class="logwrap" id="logwrap">
+      <div class="a-live stack">
+        <h2 class="desk">Matches in play</h2>
+        <div id="live" class="stack"></div>
+        <button type="button" class="btn newbtn" id="newBtn" data-act="toggleform" aria-expanded="false" aria-controls="formPanel">+ New match</button>
+      </div>
+      <div class="a-form panel stack" id="formPanel">
+        <h2>New match</h2>
+        <form class="new" id="newMatch" autocomplete="off">
+          <div class="field full"><span class="label">Plays white</span>
+            <div class="seg" id="whiteSeg" role="group" aria-label="Who plays white">
+              <button type="button" data-act="white" data-side="a" aria-pressed="true">Amadeo</button>
+              <button type="button" data-act="white" data-side="b" aria-pressed="false">Gela</button>
+            </div></div>
+          <div class="field"><label class="label" for="mdate">Date</label><input id="mdate" type="date" required></div>
+          <div class="field"><label class="label" for="mstake">Wager (AED, optional)</label><input id="mstake" inputmode="decimal" placeholder="None" maxlength="12"></div>
+          <p class="err full" id="formErr" hidden></p>
+          <div class="full"><button class="btn primary" type="submit" id="startBtn" style="width:100%;height:48px">Start match</button></div>
+        </form>
+        <p class="hint">Leave the wager empty for a friendly. Whoever wins the match collects it.</p>
+      </div>
+      <div class="a-mini stack" id="mini"></div>
+      <div class="a-recent panel">
+        <h3 style="margin-bottom:4px">Recent results</h3>
+        <div id="recent"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-dash" class="stack" hidden>
+    <div class="filters">
+      <div class="field"><label class="label" for="fPeriod">Period</label>
+        <select id="fPeriod" class="inp"><option value="all">All time</option><option value="year">This year</option><option value="90">Last 90 days</option><option value="30">Last 30 days</option></select></div>
+    </div>
+    <div id="dash" class="stack" style="gap:26px"></div>
+  </section>
+
+  <section id="tab-hist" class="stack" hidden>
+    <h2>Matches</h2>
+    <div id="hist"></div>
+  </section>
+
+  <footer class="sync" id="syncwrap"><span id="sync" data-s="loading">Connecting…</span></footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+const TARGET = 3, MAX_FILS = 10000000; // AED 100,000
+const NAME = {a:'Amadeo', b:'Gela'}, DBK = {a:'amadeo', b:'gela'}, FROMDB = {amadeo:'a', gela:'b'};
+const other = s => s==='a' ? 'b' : 'a';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today = () => ymd(new Date());
+const pct = (a,b) => b ? Math.round(100*a/b) : null;
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtDate = s => { const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||''); return m ? (+m[3])+' '+MONTHS[+m[2]-1]+' '+m[1] : (s||''); };
+function aed(f){ const n=Math.abs(f)/100; return 'AED '+n.toLocaleString('en-GB',{minimumFractionDigits:(f%100)?2:0,maximumFractionDigits:2}); }
+function aedSigned(f){ return f===0 ? 'AED 0' : (f>0?'+':'\u2212')+aed(f); }
+function parseAmount(s){
+  s = String(s).trim().replace(/[^\d.,]/g,''); if(!s) return NaN;
+  s = s.replace(/,(?=\d{3}(\D|$))/g,'').replace(/,/g,'.');
+  const parts = s.split('.'); if(parts.length>2){ const dec=parts.pop(); s=parts.join('')+'.'+dec; }
+  const n = parseFloat(s); return Number.isFinite(n) ? Math.round(n*100) : NaN;
+}
+
+const state = { raw:{}, matches:[], tab:'log', confirmDel:null, editId:null, gameEdit:null, details:null, detailsWhite:'a', detailsErr:'',
+  formOpen:false, white:null, whiteTouched:false, connected:false, loaded:false };
+let code = null, ref = null, syncBtn = null;
+
+/* Replace a container's markup without losing what someone is typing in it */
+function setHTML(el, html){
+  const keep = {};
+  el.querySelectorAll('input[id]').forEach(i=>{ if(i.type!=='checkbox') keep[i.id+'|'+(i.dataset.for||'')] = i.value; });
+  const act = document.activeElement; const fid = act && el.contains(act) && act.id ? act.id : null;
+  let ss=null, se=null; try{ ss=act.selectionStart; se=act.selectionEnd; }catch(e){}
+  el.innerHTML = html;
+  el.querySelectorAll('input[id]').forEach(i=>{ const k=i.id+'|'+(i.dataset.for||''); if(k in keep) i.value = keep[k]; });
+  if(fid){ const f=document.getElementById(fid); if(f){ f.focus(); try{ if(ss!==null) f.setSelectionRange(ss,se); }catch(e){} } }
+}
+
+/* ---------- scoring (pure) ---------- */
+function endIndex(games, t){ let a=0,b=0; for(let i=0;i<games.length;i++){ const p=games[i].double?2:1; if(games[i].w==='a') a+=p; else b+=p; if(a>=t||b>=t) return i; } return -1; }
+function score(m){
+  let a=0,b=0,end=-1; const tl=[]; const t=m.target||TARGET;
+  for(let i=0;i<m.games.length;i++){ const g=m.games[i]; const p=g.double?2:1; if(g.w==='a') a+=p; else b+=p; tl.push([a,b]); if(a>=t||b>=t){ end=i; break; } }
+  const done = end!==-1;
+  return {a,b,done,winner: done ? (a>b?'a':'b') : null, tl, end, extra: done ? m.games.length-1-end : 0};
+}
+const effGames = m => { const s=score(m); return s.done ? m.games.slice(0,s.end+1) : m.games; };
+const chrono = (x,y) => (x.date||'').localeCompare(y.date||'') || (x.createdAt||0)-(y.createdAt||0);
+
+function stats(ms){
+  const blank = () => ({mp:0,mw:0,gp:0,gw:0,dW:0,dL:0,pf:0,pa:0,res:[],won:0,lost:0,wW:0,wL:0,bestWin:0,first:0,firstWon:0,cb:0,sw:0});
+  const P = {a:blank(), b:blank()};
+  const sorted = [...ms].sort(chrono);
+  let games=0, doubles=0, completed=0, firstWinWon=0, comebacks=0, sweeps=0, dblMatches=0, dblMatchWon=0, gamesInDone=0, wm=0, wagered=0, inPlayStake=0, inPlay=0, biggest=0;
+  const results = [];
+  for(const m of sorted){
+    const s = score(m); const eg = effGames(m);
+    eg.forEach(g=>{
+      games++; P.a.gp++; P.b.gp++;
+      const pts=g.double?2:1; const W=P[g.w], L=P[other(g.w)];
+      W.gw++; W.pf+=pts; L.pa+=pts; if(g.double){ doubles++; W.dW++; L.dL++; }
+    });
+    if(!s.done){ inPlay++; inPlayStake += m.stake||0; continue; }
+    completed++; gamesInDone += eg.length; P.a.mp++; P.b.mp++;
+    const W=P[s.winner], L=P[other(s.winner)];
+    W.mw++; W.res.push('W'); L.res.push('L');
+    const fw = m.games[0].w; P[fw].first++; if(fw===s.winner){ P[fw].firstWon++; firstWinWon++; }
+    const trailed = s.tl.some(([a,b]) => s.winner==='a' ? b-a>=2 : a-b>=2); if(trailed){ comebacks++; W.cb++; }
+    if((s.winner==='a'?s.b:s.a)===0){ sweeps++; W.sw++; }
+    for(const side of ['a','b']){ if(eg.some(g=>g.w===side && g.double)){ dblMatches++; if(s.winner===side) dblMatchWon++; } }
+    if(m.stake>0){ wm++; wagered+=m.stake; W.won+=m.stake; L.lost+=m.stake; W.wW++; L.wL++; W.bestWin=Math.max(W.bestWin,m.stake); biggest=Math.max(biggest,m.stake); }
+    results.push({m,s});
+  }
+  ['a','b'].forEach(k=>{
+    const p=P[k]; const last=p.res[p.res.length-1]; let st=0; for(let i=p.res.length-1;i>=0 && p.res[i]===last;i--) st++;
+    let best=0,run=0; for(const r of p.res){ run = r==='W'?run+1:0; best=Math.max(best,run); }
+    p.streak = last ? last+st : ''; p.bestRun=best; p.form=p.res.slice(-5); p.net=p.won-p.lost;
+  });
+  return {P,games,doubles,completed,firstWinWon,comebacks,sweeps,dblMatches,dblMatchWon,gamesInDone,wm,wagered,inPlayStake,inPlay,biggest,results,matches:sorted};
+}
+
+/* ---------- data ---------- */
+function build(){
+  const out=[];
+  Object.keys(state.raw||{}).forEach(id=>{
+    const r=state.raw[id]; if(!r || !FROMDB[r.white] || typeof r.date!=='string') return;
+    const games = Object.keys(r.games||{}).map(gid=>{ const g=r.games[gid]; return g && FROMDB[g.w] ? {id:gid, w:FROMDB[g.w], double:!!g.double, at:+g.at||0} : null; })
+      .filter(Boolean).sort((x,y)=>x.at-y.at || (x.id<y.id?-1:1));
+    out.push({id, white:FROMDB[r.white], date:r.date, stake:(+r.stake>0?Math.round(+r.stake):0), target:+r.target||TARGET, createdAt:+r.createdAt||0, updatedAt:+r.updatedAt||0, games});
+  });
+  state.matches = out;
+}
+const all = () => state.matches;
+const find = id => state.matches.find(m=>m.id===id);
+const writable = () => !!ref;
+
+function setSync(s, detail){
+  const el=$('#sync'); if(!el) return; el.dataset.s=s;
+  el.textContent = s==='synced' ? 'Shared with Amadeo and Gela \u00b7 synced'
+    : s==='offline' ? 'Offline. Changes will sync when you\u2019re back online'
+    : s==='error' ? 'Couldn\u2019t sync'+(detail?' ('+detail+')':'')
+    : s==='setup' ? 'Not connected yet (setup needed)'
+    : s==='local' ? 'Not connected. Open your family link'
+    : 'Connecting\u2026';
+  $('#syncwrap').querySelectorAll('button').forEach(b=>{ if(b!==syncBtn) b.remove(); });
+  if(syncBtn) $('#syncwrap').appendChild(syncBtn);
+}
+let toastT; function toast(msg){ const t=$('#toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true, 4200); }
+function wr(promise){
+  return Promise.resolve(promise).then(()=>setSync('synced')).catch(err=>{
+    const c = err && (err.code||err.message) || 'unknown';
+    setSync('error', c); toast("That didn't save ("+c+"). Check the connection and try again.");
+  });
+}
+
+function addGame(id, side, dbl){
+  const m=find(id); if(!m || !ref || score(m).done) return;
+  const gid = ref.child(id).child('games').push().key; const now=Date.now();
+  const u = {updatedAt:now}; u['games/'+gid] = {w:DBK[side], double:!!dbl, at:now};
+  wr(ref.child(id).update(u));
+}
+function undoGame(id){
+  const m=find(id); if(!m || !ref || !m.games.length) return;
+  const last=m.games[m.games.length-1]; const u={updatedAt:Date.now()}; u['games/'+last.id]=null;
+  wr(ref.child(id).update(u));
+}
+function saveGame(trim){
+  const ge=state.gameEdit; const m=ge && find(ge.id); if(!m || !ref) return;
+  if(ge.idx >= m.games.length){ state.gameEdit=null; return render(); }
+  const games = m.games.map(g=>({...g})); games[ge.idx] = {...games[ge.idx], w:ge.w, double:!!ge.double};
+  const end = endIndex(games, m.target||TARGET);
+  const u = {updatedAt:Date.now()}; const gid = games[ge.idx].id;
+  u['games/'+gid+'/w'] = DBK[ge.w]; u['games/'+gid+'/double'] = !!ge.double;
+  if(end!==-1 && end<games.length-1){
+    if(!trim){ ge.warn={end,total:games.length}; return render(); }
+    for(let i=end+1;i<games.length;i++) u['games/'+games[i].id] = null;
+  }
+  state.gameEdit=null; render(); wr(ref.child(m.id).update(u));
+}
+function removeGame(){
+  const ge=state.gameEdit; const m=ge && find(ge.id); if(!m || !ref) return;
+  const g=m.games[ge.idx]; if(!g){ state.gameEdit=null; return render(); }
+  const u={updatedAt:Date.now()}; u['games/'+g.id]=null;
+  state.gameEdit=null; render(); wr(ref.child(m.id).update(u));
+}
+function readStake(raw){
+  raw = String(raw||'').trim(); if(!raw) return {ok:true, v:0};
+  const v = parseAmount(raw);
+  if(!Number.isFinite(v) || v<=0) return {ok:false, msg:'Enter a wager greater than 0, or leave it empty.'};
+  if(v>MAX_FILS) return {ok:false, msg:'That wager looks too large (the maximum is AED 100,000).'};
+  return {ok:true, v};
+}
+function saveDetails(id){
+  const m=find(id); if(!m || !ref) return;
+  const date=$('#ed-date').value; const st=readStake($('#ed-stake').value);
+  if(!date){ state.detailsErr='Pick the date the match was played.'; return render(); }
+  if(!st.ok){ state.detailsErr=st.msg; return render(); }
+  const u = {date, white:DBK[state.detailsWhite], stake: st.v>0 ? st.v : null, updatedAt:Date.now()};
+  state.details=null; state.detailsErr=''; render(); wr(ref.child(id).update(u));
+}
+function delMatch(id){
+  if(!ref) return; state.confirmDel=null; if(state.editId===id) state.editId=null; render();
+  wr(ref.child(id).remove());
+}
+
+/* ---------- rendering: match card ---------- */
+function matchCard(m, opts={}){
+  const s=score(m); const can=writable(); const n=m.games.length;
+  const aLead = s.done ? s.winner==='a' : s.a>s.b, bLead = s.done ? s.winner==='b' : s.b>s.a;
+  const status = s.done ? `<span class="final">FINAL</span>` : `<span class="live">LIVE</span>`;
+  if(state.gameEdit && state.gameEdit.id===m.id && state.gameEdit.idx >= n) state.gameEdit=null;
+  const ge = state.gameEdit && state.gameEdit.id===m.id ? state.gameEdit : null;
+  const glog = m.games.map((g,i)=>{
+    const extra = s.done && i>s.end;
+    const txt=`G${i+1} ${esc(NAME[g.w])}${g.double?' \u00b7 double':''}${extra?' \u00b7 after the end':''}`;
+    const cls=`chip${g.double?' d':''}${extra?' x':''}${ge&&ge.idx===i?' sel':''}`;
+    return can ? `<button type="button" class="${cls}" data-act="gedit" data-id="${m.id}" data-idx="${i}" aria-label="Edit game ${i+1}">${txt}</button>` : `<span class="${cls}">${txt}</span>`;
+  }).join('');
+  let gedit='';
+  if(ge){
+    const w=ge.warn;
+    gedit = `<div class="editbox">
+      <div class="label">Edit game ${ge.idx+1}</div>
+      <div class="seg" role="group" aria-label="Winner of game ${ge.idx+1}">
+        <button type="button" data-act="gw" data-side="a" aria-pressed="${ge.w==='a'}">${NAME.a} won</button>
+        <button type="button" data-act="gw" data-side="b" aria-pressed="${ge.w==='b'}">${NAME.b} won</button></div>
+      <label class="check"><input type="checkbox" data-act="gdbl" ${ge.double?'checked':''}> Double, worth 2 (opponent bore off no checkers)</label>
+      ${w?`<div class="warn">With this change the match is decided at game ${w.end+1}, so game${w.total-w.end-1>1?`s ${w.end+2}\u2013${w.total}`:` ${w.end+2}`} could not have been played.
+          <div class="row" style="margin-top:8px"><button class="btn primary" data-act="gtrim">Save and remove game${w.total-w.end-1>1?'s':''} ${w.end+2}${w.total-w.end-1>1?'\u2013'+w.total:''}</button><button class="btn ghost" data-act="gcancel">Cancel</button></div></div>`
+        :`<div class="row"><button class="btn primary" data-act="gsave">Save game</button><button class="btn ghost danger" data-act="gremove">Remove game</button><button class="btn ghost" data-act="gcancel">Cancel</button></div>`}
+    </div>`;
+  }
+  let details='';
+  if(state.details===m.id){
+    details = `<div class="editbox">
+      <div class="label">Edit match details</div>
+      <div class="egrid">
+        <div class="field"><label class="label" for="ed-date">Date</label><input id="ed-date" data-for="${m.id}" type="date" value="${esc(m.date)}"></div>
+        <div class="field"><label class="label" for="ed-stake">Wager (AED)</label><input id="ed-stake" data-for="${m.id}" inputmode="decimal" placeholder="None" maxlength="12" value="${m.stake?esc(String(m.stake/100)):''}"></div>
+      </div>
+      <div class="field"><span class="label">Plays white</span>
+        <div class="seg" role="group" aria-label="Who plays white">
+          <button type="button" data-act="dwhite" data-side="a" aria-pressed="${state.detailsWhite==='a'}">${NAME.a}</button>
+          <button type="button" data-act="dwhite" data-side="b" aria-pressed="${state.detailsWhite==='b'}">${NAME.b}</button></div></div>
+      <p class="hint">Clear the wager box to remove the wager. Changing it also changes the stats for this match.</p>
+      ${state.detailsErr?`<p class="err">${esc(state.detailsErr)}</p>`:''}
+      <div class="row"><button class="btn primary" data-act="dsave" data-id="${m.id}">Save details</button><button class="btn ghost" data-act="dcancel">Cancel</button></div>
+    </div>`;
+  }
+  const acts = s.done
+    ? `<p class="hint" style="text-align:center;font-weight:700;color:var(--ink)">${esc(NAME[s.winner])} won ${Math.max(s.a,s.b)}\u2013${Math.min(s.a,s.b)}${m.stake?` and collects ${aed(m.stake)}`:''}</p>`
+    : `<div class="acts">
+      <button class="w a" data-act="win" data-id="${m.id}" data-side="a" ${can?'':'disabled'} aria-label="${NAME.a} won a game, 1 point">${NAME.a} +1</button>
+      <button class="w b" data-act="win" data-id="${m.id}" data-side="b" ${can?'':'disabled'} aria-label="${NAME.b} won a game, 1 point">${NAME.b} +1</button>
+      <button class="d" data-act="dbl" data-id="${m.id}" data-side="a" ${can?'':'disabled'} aria-label="${NAME.a} won a double, 2 points">Double +2</button>
+      <button class="d" data-act="dbl" data-id="${m.id}" data-side="b" ${can?'':'disabled'} aria-label="${NAME.b} won a double, 2 points">Double +2</button></div>`;
+  const del = state.confirmDel===m.id
+    ? `<div class="confirm">Delete this match and its ${n} game${n===1?'':'s'}?
+         <button class="btn danger" data-act="delyes" data-id="${m.id}">Delete</button><button class="btn ghost" data-act="delno">Keep</button></div>`
+    : `<button class="btn ghost danger" data-act="del" data-id="${m.id}" ${can?'':'disabled'}>Delete match</button>`;
+  const stoneA = m.white==='a' ? 'a' : 'b', stoneB = m.white==='b' ? 'a' : 'b';
+  const extraNote = s.extra>0 ? `<p class="hint">${s.extra} game${s.extra===1?' was':'s were'} logged after the match was decided and ${s.extra===1?'is':'are'} ignored. Tap ${s.extra===1?'it':'one'} to remove ${s.extra===1?'it':'them'}.</p>` : '';
+  return `<article class="match">
+    <div class="meta">${status}<span>${fmtDate(m.date)} \u00b7 first to ${m.target||TARGET}${m.stake?` \u00b7 <span class="wagertag">Wager ${aed(m.stake)}</span>`:''}</span></div>
+    <div class="sb">
+      <div class="side"><span class="stone ${stoneA}" aria-hidden="true"></span><span class="pname">${NAME.a}</span></div>
+      <div class="score" aria-label="${NAME.a} ${s.a}, ${NAME.b} ${s.b}"><span class="${aLead?'lead':''}">${s.a}</span><span class="sep">:</span><span class="${bLead?'lead':''}">${s.b}</span></div>
+      <div class="side"><span class="stone ${stoneB}" aria-hidden="true"></span><span class="pname">${NAME.b}</span></div>
+    </div>
+    ${details}
+    ${acts}
+    ${glog?`<div class="glog">${glog}</div>`:'<p class="hint">No games yet. Tap +1 for whoever takes the first game, or Double +2 if they won it before the opponent bore off a checker.</p>'}
+    ${glog && can && !ge ? '<p class="hint" style="margin-top:-6px">Tap a game to change it.</p>' : ''}
+    ${extraNote}
+    ${gedit}
+    <div class="foot"><div class="row" style="gap:2px"><button class="btn ghost" data-act="undo" data-id="${m.id}" ${can && n?'':'disabled'}>Undo last game</button>
+      <button class="btn ghost" data-act="details" data-id="${m.id}" ${can && state.details!==m.id?'':'disabled'}>Edit details</button></div>
+      ${opts.closable?`<button class="btn ghost" data-act="close">Done editing</button>`:''}${del}</div>
+  </article>`;
+}
+
+function renderBanner(){
+  const b=$('#banner'); b.className='banner';
+  if(state.problem){ b.classList.add('warnb'); b.textContent=state.problem; }
+  else b.textContent='';
+}
+function defaultWhite(){
+  const last=[...all()].sort(chrono).pop();
+  return last ? other(last.white) : 'a';
+}
+function renderLog(){
+  const ms=all();
+  const live=ms.filter(m=>!score(m).done).sort((a,b)=>chrono(b,a));
+  const edit=state.editId ? find(state.editId) : null;
+  let html='';
+  if(edit && score(edit).done) html += `<p class="label">Editing a finished match</p>` + matchCard(edit,{closable:true});
+  if(!state.loaded && ref) html += `<div class="empty">Loading matches\u2026</div>`;
+  else if(!live.length) html += `<div class="empty"><h3>No match in play</h3>Start a new match to begin logging. Each game adds 1 point to the winner, or 2 for a double, and the match closes when someone reaches 3.</div>`;
+  else html += live.map(m=>matchCard(m)).join('');
+  setHTML($('#live'), html);
+  renderMini();
+  $('#logwrap').classList.toggle('open', !!state.formOpen);
+  $('#newBtn').textContent = state.formOpen ? 'Close' : '+ New match';
+  $('#newBtn').setAttribute('aria-expanded', String(!!state.formOpen));
+  const w = state.whiteTouched && state.white ? state.white : defaultWhite();
+  $('#whiteSeg').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.side===w)));
+  const recent=ms.filter(m=>score(m).done && m.id!==state.editId).sort((a,b)=>(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0) || chrono(b,a)).slice(0,5);
+  $('#recent').innerHTML = recent.length ? recent.map(m=>{ const s=score(m); const W=NAME[s.winner], L=NAME[other(s.winner)];
+      return `<div class="recent"><div style="min-width:0"><strong>${W}</strong> <span class="muted">beat</span> ${L}
+        <div class="hint">${fmtDate(m.date)}${m.stake?' \u00b7 '+aed(m.stake)+' wager':''}</div></div>
+        <div style="display:flex;align-items:center;gap:6px"><span class="sc num">${Math.max(s.a,s.b)}\u2013${Math.min(s.a,s.b)}</span><button class="btn ghost" data-act="edit" data-id="${m.id}">Edit</button></div></div>`; }).join('')
+    : `<p class="hint" style="padding:8px 0">Finished matches appear here.</p>`;
+  $('#startBtn').disabled = !writable();
+}
+function renderMini(){
+  const el=$('#mini');
+  if(!state.loaded || !all().length){ el.innerHTML=''; return; }
+  const S=stats(all()); if(!S.completed){ el.innerHTML=''; return; }
+  const net=S.P.a.net;
+  const tiles = `<div class="tiles3">
+    <div class="tile"><div class="l">Matches</div><div class="v">${S.P.a.mw}\u2013${S.P.b.mw}</div></div>
+    <div class="tile"><div class="l">Doubles</div><div class="v">${S.games?pct(S.doubles,S.games)+'%':'\u2013'}</div></div>
+    <div class="tile"><div class="l">${S.wm?'Net wagers':'Games/match'}</div><div class="v ${S.wm?(net>0?'pos':net<0?'neg':''):''}" style="${S.wm?'font-size:1.5rem':''}">${S.wm?(net===0?'Level':esc(NAME[net>0?'a':'b'])+' '+aedSigned(Math.abs(net))):(S.gamesInDone/S.completed).toFixed(1)}</div></div></div>`;
+  const rows = ['a','b'].sort((x,y)=>S.P[y].mw-S.P[x].mw).map((k,i)=>{ const p=S.P[k];
+    return `<div class="srow${i===0&&p.mw>S.P[other(k)].mw?' top':''}"><span class="rk">${i+1}</span><span class="nm">${NAME[k]}</span><span class="wl">${p.mw}\u2013${p.mp-p.mw}</span>
+      <span class="pc${p.mp<5?' low':''}">${pct(p.mw,p.mp)}%</span>
+      <span class="form">${p.form.map(r=>`<span class="fx ${r}" title="${r==='W'?'Won':'Lost'}"></span>`).join('')}</span></div>`; }).join('');
+  el.innerHTML = tiles + `<div><h3 class="sh">Standings</h3>${rows}</div>`;
+}
+
+/* ---------- dashboard ---------- */
+function filtered(){
+  const per=$('#fPeriod').value; const now=new Date(); let from='';
+  if(per==='year') from=now.getFullYear()+'-01-01';
+  else if(per==='90'||per==='30'){ const d=new Date(now); d.setDate(d.getDate()-Number(per)); from=ymd(d); }
+  return all().filter(m=>!from || m.date>=from);
+}
+function pctCell(a,b,low){ const p=pct(a,b); if(p===null) return '<td class="num r">\u2013</td>'; return `<td class="num r${low?' low':''}"><strong>${p}%</strong></td>`; }
+function renderDash(){
+  const ms=filtered();
+  if(!state.loaded && ref){ $('#dash').innerHTML='<div class="empty">Loading matches\u2026</div>'; return; }
+  if(!ms.length){ $('#dash').innerHTML=`<div class="empty"><h3>Nothing to chart yet</h3>${all().length?'No matches in this period.':'Once matches are logged you\u2019ll see the head-to-head record, wagers, doubles and comeback rates here.'}</div>`; return; }
+  const S=stats(ms); const A=S.P.a, B=S.P.b, N=S.completed;
+  const small = N<10 ? '<span class="tag">small sample</span>' : '';
+  const kp = `<div class="kpis four">
+    <div class="kpi"><div class="label">Matches</div><div class="v num">${N}</div><div class="s">${S.inPlay} in play</div></div>
+    <div class="kpi"><div class="label">Games</div><div class="v num">${S.games}</div><div class="s">${N?(S.gamesInDone/N).toFixed(1)+' per match':'\u2013'}</div></div>
+    <div class="kpi"><div class="label">Doubles</div><div class="v num">${S.games?pct(S.doubles,S.games)+'%':'\u2013'}</div><div class="s">${S.doubles} of ${S.games} games</div></div>
+    <div class="kpi"><div class="label">Wagered</div><div class="v num">${S.wm?aed(S.wagered):'\u2013'}</div><div class="s">${S.wm} of ${N} matches</div></div></div>`;
+  if(!N){ $('#dash').innerHTML = kp + `<div class="empty"><h3>No finished matches yet</h3>The head-to-head and patterns appear once a match is decided.</div>`; return; }
+  const lead = A.mw===B.mw ? '' : (A.mw>B.mw ? 'a' : 'b');
+  const lastW = S.results.length ? S.results[S.results.length-1].s.winner : null;
+  let run=0; for(let i=S.results.length-1;i>=0 && S.results[i].s.winner===lastW;i--) run++;
+  const streak = lastW ? `${NAME[lastW]} has won the last ${run} match${run===1?'':'es'} between them.` : '';
+  const head = `<div class="panel stack" style="gap:10px">
+      <div class="label" style="text-align:center">Head to head${small}</div>
+      <div class="sb">
+        <div class="side"><span class="pname">${NAME.a}</span></div>
+        <div class="score" aria-label="${NAME.a} ${A.mw} wins, ${NAME.b} ${B.mw} wins"><span class="${lead==='a'?'lead':''}">${A.mw}</span><span class="sep">:</span><span class="${lead==='b'?'lead':''}">${B.mw}</span></div>
+        <div class="side"><span class="pname">${NAME.b}</span></div>
+      </div>
+      <p class="hint" style="text-align:center">${N} finished match${N===1?'':'es'} \u00b7 ${S.games} games \u00b7 ${pct(S.doubles,S.games)}% doubles${S.inPlay?` \u00b7 ${S.inPlay} in play`:''}</p>
+      ${streak?`<p style="text-align:center;margin:0;font-weight:700">${streak}</p>`:''}
+    </div>`;
+  const low = p => p.mp<5;
+  const rec = `<section class="sec"><header><h2>Records</h2><span class="hint">* fewer than 5 matches, so the % is unreliable.</span></header>
+    <div class="scroll"><table><thead><tr><th>Player</th><th class="r">Matches W\u2013L</th><th class="r">Match win</th><th class="r">Games W\u2013L</th><th class="r">Game win</th><th class="r">Doubles won</th><th class="r">Doubles lost</th><th class="r">Points \u00b1</th><th>Last 5</th><th>Streak</th></tr></thead><tbody>
+    ${['a','b'].map(k=>{ const p=S.P[k]; return `<tr><td><strong>${NAME[k]}</strong></td>
+      <td class="num r">${p.mw}\u2013${p.mp-p.mw}</td>${pctCell(p.mw,p.mp,low(p))}
+      <td class="num r">${p.gw}\u2013${p.gp-p.gw}</td>${pctCell(p.gw,p.gp,p.gp<10)}
+      <td class="num r">${p.dW}</td><td class="num r">${p.dL}</td>
+      <td class="num r">${p.pf-p.pa>0?'+':''}${p.pf-p.pa}</td>
+      <td><span class="form">${p.form.map(r=>`<span class="fx ${r}" title="${r==='W'?'Won':'Lost'}"></span>`).join('')||'<span class="muted">\u2013</span>'}</span></td>
+      <td class="num"><strong>${p.streak||'\u2013'}</strong></td></tr>`; }).join('')}
+    </tbody></table></div></section>`;
+  const row = (label, a, b, note) => { const t=a+b; const pa=t?a/t*100:0, pb=t?b/t*100:0;
+    return `<div class="cmp"><div class="lbl">${label}${note?` <span class="muted">\u00b7 ${note}</span>`:''}</div>
+      <span class="cv${a>b?' hi':''}">${a}</span>
+      <span class="bars"><span class="bl${a>b?' hi':''}" style="width:${pa}%"></span></span>
+      <span class="bars"><span class="br${b>a?' hi':''}" style="width:${pb}%"></span></span>
+      <span class="cv r${b>a?' hi':''}">${b}</span></div>`; };
+  const cmp = `<section class="sec"><header><h2>Compared</h2><span class="hint">${NAME.a} left, ${NAME.b} right</span></header>
+    <div class="panel stack" style="gap:14px">
+      ${row('Matches won', A.mw, B.mw)}
+      ${row('Games won', A.gw, B.gw, `${pct(A.gw,A.gw+B.gw)}% \u2013 ${pct(B.gw,A.gw+B.gw)}%`)}
+      ${row('Points scored', A.pf, B.pf)}
+      ${row('Doubles won', A.dW, B.dW)}
+      ${row('Took the first game', A.first, B.first)}
+      ${row('Comebacks from 2+ down', A.cb, B.cb)}
+      ${row('Whitewashes (opponent on 0)', A.sw, B.sw)}
+      ${row('Longest winning run', A.bestRun, B.bestRun)}
+    </div>
+    <p class="note">Whoever took the first game went on to win ${S.firstWinWon} of ${N} matches (${pct(S.firstWinWon,N)}%).</p></section>`;
+  let money = '';
+  if(S.wm || S.inPlayStake){
+    const net=A.net; const who = net>0?'a':net<0?'b':null;
+    const headline = S.wm ? `<div class="panel" style="text-align:center">
+        <div class="label">Net position</div>
+        <div class="score" style="font-size:3.2rem;margin:6px 0 2px;${who?'':'color:var(--muted)'}">${who?aed(Math.abs(net)):'Level'}</div>
+        <p class="hint">${who?`${NAME[who]} is up on wagers. ${NAME[other(who)]} owes ${aed(Math.abs(net))}.`:'Neither player is up on wagers.'}</p></div>` : '';
+    const tbl = S.wm ? `<div class="scroll"><table><thead><tr><th>Player</th><th class="r">Wagers W\u2013L</th><th class="r">Won</th><th class="r">Lost</th><th class="r">Net</th><th class="r">Biggest win</th></tr></thead><tbody>
+      ${['a','b'].map(k=>{ const p=S.P[k]; return `<tr><td><strong>${NAME[k]}</strong></td><td class="num r">${p.wW}\u2013${p.wL}</td><td class="num r">${aed(p.won)}</td><td class="num r">${aed(p.lost)}</td>
+        <td class="num r"><strong class="${p.net>0?'pos':p.net<0?'neg':''}">${aedSigned(p.net)}</strong></td><td class="num r">${p.bestWin?aed(p.bestWin):'\u2013'}</td></tr>`; }).join('')}
+      </tbody></table></div>` : '';
+    const note = `<p class="note">${S.wm?`${S.wm} of ${N} finished match${N===1?'':'es'} had a wager, ${aed(S.wagered)} in total (average ${aed(Math.round(S.wagered/S.wm))}, biggest ${aed(S.biggest)}). `:''}${S.inPlayStake?`${aed(S.inPlayStake)} is riding on matches in play.`:''}</p>`;
+    money = `<section class="sec"><header><h2>Wagers</h2><span class="hint">The winner of each match collects its wager.</span></header>${headline}${tbl}${note}</section>`;
+  }
+  const card = (label,big,text,n) => `<div class="ins"><div class="label">${label}${n<10?'<span class="tag">small sample</span>':''}</div><div class="big">${big}</div><p>${text}</p><div class="n">Based on ${n} match${n===1?'':'es'}</div></div>`;
+  const ins=[];
+  ins.push(card('First game', pct(S.firstWinWon,N)+'%', `of matches were won by whoever took the first game (${S.firstWinWon} of ${N}).`, N));
+  ins.push(card('Comebacks', S.comebacks, `match${S.comebacks===1?' was':'es were'} won by a player who had been 2 or more points behind.`, N));
+  if(S.dblMatches) ins.push(card('Doubles decide', pct(S.dblMatchWon,S.dblMatches)+'%', `of the time, a player who won at least one double went on to win the match (${S.dblMatchWon} of ${S.dblMatches}).`, N));
+  ins.push(card('Whitewashes', S.sweeps, `match${S.sweeps===1?'':'es'} ended with the loser on 0 points.`, N));
+  const dk = A.dW===B.dW ? null : (A.dW>B.dW?'a':'b');
+  if(dk) ins.push(card('Most doubles', NAME[dk], `has won ${S.P[dk].dW} game${S.P[dk].dW===1?'':'s'} as a double, ${pct(S.P[dk].dW,S.P[dk].gw)}% of their game wins.`, N));
+  const rk = A.bestRun===B.bestRun ? null : (A.bestRun>B.bestRun?'a':'b');
+  if(rk && S.P[rk].bestRun>1) ins.push(card('Longest run', S.P[rk].bestRun+' wins', `in a row, by ${NAME[rk]}.`, N));
+  const pat = `<section class="sec"><header><h2>Patterns</h2><span class="hint">Completed matches only. Treat anything marked small sample as anecdote, not trend.</span></header><div class="insights">${ins.join('')}</div></section>`;
+  const meet = `<section class="sec"><header><h2>Meetings</h2><span class="hint">Most recent first</span></header>
+    <div class="scroll"><table><thead><tr><th>Date</th><th class="r">${NAME.a}</th><th class="r">${NAME.b}</th><th>Winner</th><th class="r">Doubles</th><th class="r">Wager</th></tr></thead><tbody>
+    ${[...S.results].reverse().slice(0,20).map(({m,s})=>`<tr><td class="num">${fmtDate(m.date)}</td><td class="num r">${s.a}</td><td class="num r">${s.b}</td><td><strong>${NAME[s.winner]}</strong></td>
+      <td class="num r">${effGames(m).filter(g=>g.double).length}</td><td class="num r">${m.stake?aed(m.stake):'\u2013'}</td></tr>`).join('')}
+    </tbody></table></div></section>`;
+  $('#dash').innerHTML = kp + head + rec + cmp + money + pat + meet + activity(ms);
+  bindChart();
+}
+function activity(ms){
+  const byM = new Map();
+  for(const m of ms){ const k=(m.date||'').slice(0,7); if(k) byM.set(k,(byM.get(k)||0)+1); }
+  const ks = [...byM.keys()].sort(); if(!ks.length) return '';
+  let [y,mo] = ks[0].split('-').map(Number); const [ey,em] = ks[ks.length-1].split('-').map(Number);
+  const months=[]; while(y<ey || (y===ey && mo<=em)){ months.push(y+'-'+pad(mo)); mo++; if(mo>12){mo=1;y++;} }
+  const show = months.slice(-18);
+  const vals = show.map(k=>byM.get(k)||0); const max = Math.max(...vals);
+  const step = max<=5?1:max<=10?2:max<=25?5:10; const top = Math.ceil(max/step)*step || 1;
+  const W=720,H=220,L=34,R=8,T=12,B=28; const iw=W-L-R, ih=H-T-B; const bw=iw/show.length; const barW=Math.min(36,bw*0.62);
+  let g=''; for(let v=0; v<=top; v+=step){ const yy=T+ih-ih*v/top; g+=`<line class="grid" x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}"/><text x="${L-6}" y="${yy+4}" text-anchor="end">${v}</text>`; }
+  const every = Math.ceil(show.length/9);
+  const bars = show.map((k,i)=>{ const v=vals[i]; const h=ih*v/top; const x=L+bw*i+(bw-barW)/2; const [yy,mm]=k.split('-').map(Number);
+    const lbl = MONTHS[mm-1]+(i===0||mm===1?" '"+String(yy).slice(2):'');
+    return `<g data-tip="${MONTHS[mm-1]} ${yy}: ${v} match${v===1?'':'es'}" data-x="${(x+barW/2)/W}" data-y="${(T+ih-h)/H}">
+      ${v?`<rect class="bar" x="${x}" y="${T+ih-h}" width="${barW}" height="${h}" rx="3"/>`:''}
+      <rect x="${L+bw*i}" y="${T}" width="${bw}" height="${ih}" fill="transparent"/>
+      ${i%every===0?`<text x="${x+barW/2}" y="${H-8}" text-anchor="middle">${lbl}</text>`:''}</g>`; }).join('');
+  return `<section class="sec"><header><h2>Activity</h2><span class="hint">Matches started per month${months.length>18?' (last 18 months)':''}</span></header>
+    <div class="chart" id="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Matches per month">${g}${bars}</svg><div class="tip" id="tip" hidden></div></div></section>`;
+}
+function bindChart(){
+  const c = $('#chart'); if(!c) return; const tip = $('#tip'); const svg = c.querySelector('svg');
+  c.querySelectorAll('g[data-tip]').forEach(gr=>{
+    gr.addEventListener('pointerenter',()=>{ const r=svg.getBoundingClientRect(), cr=c.getBoundingClientRect();
+      tip.textContent = gr.dataset.tip; tip.hidden=false;
+      tip.style.left = (r.left-cr.left + r.width*Number(gr.dataset.x))+'px'; tip.style.top = (r.top-cr.top + r.height*Number(gr.dataset.y))+'px'; });
+    gr.addEventListener('pointerleave',()=>{ tip.hidden=true; });
+  });
+}
+
+/* ---------- history ---------- */
+function renderHist(){
+  const ms=[...all()].sort((a,b)=>chrono(b,a));
+  if(!ms.length){ $('#hist').innerHTML=`<div class="empty">${!state.loaded&&ref?'Loading matches\u2026':'No matches logged yet.'}</div>`; return; }
+  $('#hist').innerHTML = `<div class="scroll"><table><thead><tr><th>Date</th><th>White</th><th class="r">Score</th><th>Winner</th><th class="r">Games</th><th class="r">Doubles</th><th class="r">Wager</th><th></th></tr></thead><tbody>
+    ${ms.map(m=>{ const s=score(m); const eg=effGames(m); const d=eg.filter(g=>g.double).length;
+      return `<tr><td class="num">${fmtDate(m.date)}</td><td>${NAME[m.white]}</td>
+      <td class="num r"><strong>${NAME.a} ${s.a}\u2013${s.b} ${NAME.b}</strong></td><td>${s.done?`<strong>${NAME[s.winner]}</strong>`:'<span class="live">LIVE</span>'}</td>
+      <td class="num r">${eg.length}</td><td class="num r">${d}</td><td class="num r">${m.stake?aed(m.stake):'\u2013'}</td>
+      <td><button class="btn ghost" data-act="edit" data-id="${m.id}">Open</button></td></tr>`; }).join('')}
+    </tbody></table></div><p class="note">${ms.length} match${ms.length===1?'':'es'}.</p>`;
+}
+
+function render(){ renderBanner(); renderLog(); if(state.tab==='dash') renderDash(); if(state.tab==='hist') renderHist(); }
+
+/* ---------- events ---------- */
+function setTab(t){
+  state.tab=t;
+  for(const b of document.querySelectorAll('nav.tabs button')) b.setAttribute('aria-selected', String(b.dataset.tab===t));
+  $('#tab-log').hidden = t!=='log'; $('#tab-dash').hidden = t!=='dash'; $('#tab-hist').hidden = t!=='hist';
+  try{ localStorage.setItem('tawla-tab', t); }catch(e){}
+  render();
+}
+document.querySelector('nav.tabs').addEventListener('click', e=>{ const b=e.target.closest('button[data-tab]'); if(b) setTab(b.dataset.tab); });
+$('#fPeriod').addEventListener('change', renderDash);
+
+document.addEventListener('click', e=>{
+  const b=e.target.closest('[data-act]'); if(!b) return; const id=b.dataset.id;
+  switch(b.dataset.act){
+    case 'win': addGame(id, b.dataset.side, false); break;
+    case 'dbl': addGame(id, b.dataset.side, true); break;
+    case 'undo': undoGame(id); break;
+    case 'del': state.confirmDel=id; render(); break;
+    case 'delno': state.confirmDel=null; render(); break;
+    case 'delyes': delMatch(id); break;
+    case 'edit': state.editId=id; setTab('log'); window.scrollTo({top:0}); break;
+    case 'close': state.editId=null; render(); break;
+    case 'gedit': { const m=find(id); const g=m&&m.games[+b.dataset.idx]; if(!g) break;
+      state.gameEdit={id, idx:+b.dataset.idx, w:g.w, double:!!g.double, warn:null}; state.details=null; render(); break; }
+    case 'gw': if(state.gameEdit){ state.gameEdit.w=b.dataset.side; state.gameEdit.warn=null; render(); } break;
+    case 'gdbl': if(state.gameEdit){ state.gameEdit.double=b.checked; state.gameEdit.warn=null; render(); } break;
+    case 'gsave': saveGame(false); break;
+    case 'gtrim': saveGame(true); break;
+    case 'gremove': removeGame(); break;
+    case 'gcancel': state.gameEdit=null; render(); break;
+    case 'details': { const m=find(id); if(!m) break; state.details=id; state.detailsWhite=m.white; state.detailsErr=''; state.gameEdit=null; render(); const f=$('#ed-date'); if(f) f.focus(); break; }
+    case 'dwhite': state.detailsWhite=b.dataset.side; render(); break;
+    case 'dsave': saveDetails(id); break;
+    case 'dcancel': state.details=null; state.detailsErr=''; render(); break;
+    case 'white': state.white=b.dataset.side; state.whiteTouched=true; render(); break;
+    case 'toggleform': state.formOpen=!state.formOpen; render(); if(state.formOpen) $('#mstake').focus(); break;
+  }
+});
+document.addEventListener('keydown', e=>{
+  if(e.key!=='Enter' || !e.target || !e.target.id) return;
+  if(e.target.id.startsWith('ed-') && state.details){ e.preventDefault(); saveDetails(state.details); }
+});
+
+$('#mdate').value = today();
+$('#newMatch').addEventListener('submit', e=>{
+  e.preventDefault();
+  const date=$('#mdate').value; const err=$('#formErr'); const st=readStake($('#mstake').value);
+  if(!date){ err.textContent='Pick the date the match was played.'; err.hidden=false; return; }
+  if(!st.ok){ err.textContent=st.msg; err.hidden=false; return; }
+  if(!ref){ err.textContent='Not connected yet, so a match can\u2019t be saved.'; err.hidden=false; return; }
+  err.hidden=true;
+  const white = state.whiteTouched && state.white ? state.white : defaultWhite();
+  const id = ref.push().key, now=Date.now();
+  const body = {white:DBK[white], date, target:TARGET, createdAt:now, updatedAt:now}; if(st.v>0) body.stake=st.v;
+  wr(ref.child(id).set(body));
+  $('#mstake').value=''; state.formOpen=false; state.whiteTouched=false; render(); toast('Match started');
+});
+
+/* ---------- Excel export ---------- */
+function loadXLSX(){
+  if(window.XLSX) return Promise.resolve(window.XLSX);
+  return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload=()=>res(window.XLSX); s.onerror=rej; document.head.appendChild(s); });
+}
+async function exportXlsx(){
+  const btn=$('#exportBtn'); btn.disabled=true;
+  try{
+    const XLSX=await loadXLSX(); const ms=[...all()].sort(chrono); const S=stats(ms);
+    const gamesRows=[], matchRows=[];
+    ms.forEach((m,mi)=>{ const s=score(m); const mid='M'+String(mi+1).padStart(4,'0'); const eg=effGames(m);
+      eg.forEach((g,i)=>{ gamesRows.push({'Match':mid,'Date':m.date,'White':NAME[m.white],'Game #':i+1,'Winner':NAME[g.w],'Loser':NAME[other(g.w)],'Double':g.double?'Yes':'No','Points':g.double?2:1,'Score after (Amadeo\u2013Gela)':s.tl[i][0]+'\u2013'+s.tl[i][1]}); });
+      const net = s.done && m.stake ? (s.winner==='a'?m.stake:-m.stake)/100 : '';
+      matchRows.push({'Match':mid,'Date':m.date,'White':NAME[m.white],'Wager (AED)':m.stake?m.stake/100:'','Amadeo points':s.a,'Gela points':s.b,'Winner':s.done?NAME[s.winner]:'','Status':s.done?'Finished':'In play','Games':eg.length,'Doubles':eg.filter(g=>g.double).length,'Net to Amadeo (AED)':net});
+    });
+    const sumRows = ['a','b'].map(k=>{ const p=S.P[k]; return {'Player':NAME[k],'Matches played':p.mp,'Matches won':p.mw,'Match win %':p.mp?Math.round(100*p.mw/p.mp):'','Games won':p.gw,'Doubles won':p.dW,'Doubles lost':p.dL,'Points for':p.pf,'Points against':p.pa,'Wagers won':p.wW,'Wagers lost':p.wL,'AED won':p.won/100,'AED lost':p.lost/100,'Net (AED)':p.net/100,'Longest win run':p.bestRun}; });
+    const wb=XLSX.utils.book_new();
+    const add=(rows,name,empty)=>{ const ws=XLSX.utils.json_to_sheet(rows.length?rows:[empty]); const cols=Object.keys(rows[0]||empty); ws['!cols']=cols.map(c=>({wch:Math.max(10,c.length+2)})); XLSX.utils.book_append_sheet(wb,ws,name); };
+    add(gamesRows,'Games',{'Match':''}); add(matchRows,'Matches',{'Match':''}); add(sumRows,'Summary',{'Player':''});
+    const buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='tawla-track-'+today()+'.xlsx'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    toast('Excel file saved');
+  }catch(e){ toast("The export didn't complete. Try again."); }
+  finally{ btn.disabled=false; }
+}
+$('#exportBtn').addEventListener('click', exportXlsx);
+
+/* ---------- family code, share link and Firebase ---------- */
+const CODE_RE=/^[A-Za-z0-9]{20,40}$/;
+function newCode(){const a=new Uint8Array(24),c="abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";crypto.getRandomValues(a);return Array.from(a,x=>c[x%c.length]).join("")}
+function getCode(){
+  let c=(location.hash||"").replace(/^#/,"");
+  if(!CODE_RE.test(c)){try{c=localStorage.getItem("fam.code")||""}catch(e){c=""}}
+  if(!CODE_RE.test(c)){
+    c="";
+    if(confirm("First time here?\n\nOK = start a NEW family tracker\nCancel = I already have a family code")){c=newCode()}
+    else{const p=(prompt("Paste your family code (or open the family link instead):")||"").trim();if(CODE_RE.test(p))c=p}
+  }
+  if(!CODE_RE.test(c))return null;
+  try{localStorage.setItem("fam.code",c)}catch(e){}
+  try{history.replaceState(null,"",location.pathname+location.search+"#"+c)}catch(e){}
+  return c;
+}
+function makeShareButton(){
+  const b=document.createElement("button");b.type="button";b.textContent="Copy family link";
+  b.onclick=async()=>{
+    const url=location.origin+location.pathname.replace(/[^\/]*$/,"")+"#"+code;
+    try{await navigator.clipboard.writeText(url);b.textContent="Copied"}catch(e){prompt("Copy this link and send it to your family:",url)}
+    setTimeout(()=>{b.textContent="Copy family link"},1800);
+  };
+  return b;
+}
+function initSync(){
+  const cfg=window.FAMILY_FIREBASE_CONFIG;
+  if(!window.firebase||!cfg||!cfg.databaseURL||/PASTE/i.test(cfg.databaseURL)){ state.problem='Not connected yet. The page can\u2019t find your Firebase settings (config.js).'; setSync('setup'); render(); return; }
+  code=getCode();
+  if(!code){ state.problem='No family code found. Open your family link, then choose Tawla Track.'; setSync('local'); render(); return; }
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    const db=firebase.database();
+    ref=db.ref("rooms/"+code+"/tawla/matches");
+    syncBtn=makeShareButton(); setSync('loading');
+    ref.on("value",snap=>{ state.raw=snap.val()||{}; state.loaded=true; build(); render(); if($('#sync').dataset.s!=='error') setSync('synced'); },
+      err=>{ setSync('error',(err&&(err.code||err.message))||'read failed'); state.loaded=true; render(); });
+    db.ref(".info/connected").on("value",s=>{ const cur=$('#sync').dataset.s; if(s.val()===false&&cur==='synced') setSync('offline'); if(s.val()===true&&cur==='offline') setSync('synced'); });
+    render();
+  }catch(e){ setSync('error', e && e.message); }
+}
+
+let t0='log'; try{ t0=localStorage.getItem('tawla-tab')||'log'; }catch(e){}
+if(!['log','dash','hist'].includes(t0)) t0='log';
+setTab(t0);
+initSync();
+})();
+
+</script>
+</body></html>
